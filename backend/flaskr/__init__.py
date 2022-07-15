@@ -165,6 +165,7 @@ def create_app(test_config=None):
 
         new_question = body.get('question', None)
         new_answer = body.get('answer', None)
+        #new_rating = body.get('rating', None)
         new_difficulty = body.get('difficulty', None)
         new_category = body.get('category', None)
 
@@ -266,43 +267,40 @@ def create_app(test_config=None):
     """
     
     @app.route('/quizzes', methods=['POST'])
-    def get_quiz_questions():
-        data = request.get_json()
-        try:
-            category_id = data['quiz_category']['id']
-            questions_id = data['previous_questions']
-        except:
-            abort(400)
+    def get_quiz_question():
 
-        #required_category = Category.query.get(category_id)
-        #if required_category is None:
-        #    abort(404)
+        body = request.get_json()
+
+        previous_questions = body.get('previous_questions', None)
+        quiz_category = body.get('quiz_category', None)
 
         try:
-            if category_id:
-                category_questions = Question.query.filter(Question.category == category_id).all()
+            if quiz_category['id']:
+                questions = Question.query.filter(
+                    Question.category == quiz_category['id']).all()
             else:
-                category_questions = Question.query.all()
+                questions = Question.query.all()
 
-            if len(category_questions) == len(questions_id):
+            current_questions = [question.format() for question in questions]
+
+            newset = []
+            for x in current_questions:
+                if x['id'] not in previous_questions:
+                    newset.append(x)
+
+            if len(newset) is 0:
                 return jsonify({
-                    "success": True,
-                    "question": None,
-                    "empty": True
+                    'success': True,
+                    'question': None
                 })
-            else:
-                random_questions = []
-                for question in category_questions:
-                    if question.id not in questions_id:
-                        random_questions.append(question.format())
-                selected_question= random_questions[random.randint(0,len(random_questions)-1)]
-                return jsonify({
-                    "success": True,
-                    "question": selected_question,
-                    "empty": False 
-                })
+
+            return jsonify({
+                'success': True,
+                'question': newset[random.randint(0, len(newset)-1)]
+            })
+
         except:
-            abort(500)
+            abort(422)
     """
     @TODO:
     Create error handlers for all expected errors
